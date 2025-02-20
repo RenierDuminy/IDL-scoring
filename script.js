@@ -124,18 +124,24 @@ function openPopup(team) {
     assistDropdown.appendChild(optionAssist);
   });
 
-  // Finally, add "N/A" at the bottom of each dropdown
+  // ------ FIX: Add "N/A" and "‼️ CALLAHAN ‼️" as separate options ------
   const naOptionScorer = document.createElement('option');
   naOptionScorer.value = 'N/A';
   naOptionScorer.textContent = 'N/A';
   scorerDropdown.appendChild(naOptionScorer);
 
+  // For assist, first add N/A
   const naOptionAssist = document.createElement('option');
   naOptionAssist.value = 'N/A';
   naOptionAssist.textContent = 'N/A';
   assistDropdown.appendChild(naOptionAssist);
-}
 
+  // Then add a separate Callahan option
+  const callahanOptionAssist = document.createElement('option');
+  callahanOptionAssist.value = '‼️ CALLAHAN ‼️';
+  callahanOptionAssist.textContent = '‼️ CALLAHAN ‼️';
+  assistDropdown.appendChild(callahanOptionAssist);
+}
 
 // ------------- Save Score (Add or Edit) -------------
 function saveScore() {
@@ -153,11 +159,9 @@ function saveScore() {
 
   if (!currentEditID) {
     // ----- ADD NEW -----
-    // Increase the scoreboard for whichever team
     if (team === 'A') teamAScore++;
     else teamBScore++;
 
-    // Create a unique ID
     const newScoreID = Date.now().toString();
     const logEntry = createLogObject(newScoreID, team, scorer, assist);
 
@@ -178,7 +182,6 @@ function saveScore() {
       return;
     }
     // We do NOT allow changing the team (only scorer/assist).
-    // So we do NOT modify scoreboard counters.
     scoreLogs[index].Score = scorer;
     scoreLogs[index].Assist = assist;
     sessionStorage.setItem('scoreLogs', JSON.stringify(scoreLogs));
@@ -188,7 +191,7 @@ function saveScore() {
     if (row) {
       // If it's team A, the Score/Assist go in columns 0,1
       // If it's team B, columns 3,4
-      const teamLetter = popup.dataset.team; // same as old
+      const teamLetter = popup.dataset.team;
       if (teamLetter === 'A') {
         row.cells[0].textContent = scorer; 
         row.cells[1].textContent = assist;
@@ -260,7 +263,6 @@ function createScoreRow(logEntry) {
 
 // ------------- Edit Score -------------
 function editScore(scoreID) {
-  // Load the existing logs from session storage
   let scoreLogs = JSON.parse(sessionStorage.getItem('scoreLogs')) || [];
   const logToEdit = scoreLogs.find(log => log.scoreID === scoreID);
   if (!logToEdit) {
@@ -310,16 +312,21 @@ function editScore(scoreID) {
     assistDropdown.appendChild(optionAssist);
   });
 
-  // Finally, add "N/A" at the bottom of each dropdown
+  // ------ FIX: Add "🚫N/A" and "‼️ CALLAHAN ‼️" as separate options ------
   const naOptionScorer = document.createElement('option');
-  naOptionScorer.value = 'N/A';
-  naOptionScorer.textContent = 'N/A';
+  naOptionScorer.value = '🚫N/A';
+  naOptionScorer.textContent = '🚫N/A';
   scorerDropdown.appendChild(naOptionScorer);
 
   const naOptionAssist = document.createElement('option');
-  naOptionAssist.value = 'N/A';
-  naOptionAssist.textContent = 'N/A';
+  naOptionAssist.value = '🚫N/A';
+  naOptionAssist.textContent = '🚫N/A';
   assistDropdown.appendChild(naOptionAssist);
+
+  const callahanOptionAssist = document.createElement('option');
+  callahanOptionAssist.value = '‼️ CALLAHAN ‼️';
+  callahanOptionAssist.textContent = '‼️ CALLAHAN ‼️';
+  assistDropdown.appendChild(callahanOptionAssist);
 
   // Pre-fill the current scorer and assist
   scorerDropdown.value = logToEdit.Score;
