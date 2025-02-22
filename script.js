@@ -406,3 +406,97 @@ async function submitScore() {
     alert('Error exporting data: ' + error.message);
   }
 }
+
+/*************************************************
+ * Timer Functionality (migrated from index.html)
+ *************************************************/
+let countdownInterval;
+let countdownSeconds = 1200; // Default: 20 minutes
+let isRunning = false;
+
+function playBeep() {
+  let beep = new Audio('beep-07a.wav');
+  beep.play();
+}
+
+function playEndBeep() {
+  let count = 0;
+  function beepLoop() {
+    if (count < 10) {
+      let beep = new Audio('beep-07a.wav');
+      beep.play();
+      count++;
+      setTimeout(beepLoop, 1000);
+    }
+  }
+  beepLoop();
+}
+
+function updateTimerDisplay() {
+  const timerDisplay = document.getElementById('timerDisplay');
+
+  // Calculate minutes/seconds from countdownSeconds
+  const mins = Math.floor(Math.abs(countdownSeconds) / 60)
+    .toString()
+    .padStart(2, '0');
+  const secs = Math.abs(countdownSeconds % 60)
+    .toString()
+    .padStart(2, '0');
+
+  // Display negative if below zero
+  let timeDisplay = `${mins}:${secs}`;
+  if (countdownSeconds < 0) {
+    timeDisplay = `-${timeDisplay}`;
+    timerDisplay.classList.add('timer-negative');
+  } else {
+    timerDisplay.classList.remove('timer-negative');
+  }
+
+  timerDisplay.textContent = timeDisplay;
+}
+
+function toggleTimer() {
+  const timerColumn = document.getElementById('timerColumn');
+
+  if (isRunning) {
+    // Currently running -> pause
+    clearInterval(countdownInterval);
+    document.getElementById('playPauseBtn').textContent = "Play";
+    timerColumn.classList.remove('timer-running');
+    timerColumn.classList.add('timer-paused');
+    playBeep(); // Single beep on pause
+
+  } else {
+    // Currently paused -> start
+    countdownInterval = setInterval(() => {
+      countdownSeconds--;
+      updateTimerDisplay();
+      if (countdownSeconds === 0) {
+        // 0 triggers 10 quick beeps
+        playEndBeep();
+      }
+    }, 1000);
+    document.getElementById('playPauseBtn').textContent = "Pause";
+    timerColumn.classList.add('timer-running');
+    timerColumn.classList.remove('timer-paused');
+    playBeep(); // Single beep on play
+  }
+
+  isRunning = !isRunning;
+}
+
+function resetCountdown() {
+  clearInterval(countdownInterval);
+  isRunning = false;
+  document.getElementById('playPauseBtn').textContent = "Play";
+
+  const timerColumn = document.getElementById('timerColumn');
+  timerColumn.classList.remove('timer-running', 'timer-paused');
+
+  let newTime = parseInt(document.getElementById('countdownTime').value, 10) || 20;
+  countdownSeconds = newTime * 60;
+  updateTimerDisplay();
+}
+
+// Initialize display once the page loads
+window.addEventListener('DOMContentLoaded', updateTimerDisplay);

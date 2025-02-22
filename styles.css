@@ -28,7 +28,7 @@
 /*       Base Styling       */
 /* ======================== */
 body {
-  font-family: Montserrat , sans-serif;
+  font-family: Montserrat, sans-serif;
   background: var(--color-bg-main);
   margin: 0;
   padding: 10px;
@@ -276,4 +276,28 @@ input[type="button"]:hover,
   border-radius: 4px;
   font-size: 16px;
   text-align: center;
+}
+
+/* ======================== */
+/*  New Timer-Related CSS   */
+/* ======================== */
+
+/* General timer display styling */
+.timer-display {
+  font-size: 3em;
+}
+
+/* When the countdown is below zero, text becomes red */
+.timer-negative {
+  color: red;
+}
+
+/* Timer column background while running */
+.timer-running {
+  background-color: lightgreen;
+}
+
+/* Timer column background while paused */
+.timer-paused {
+  background-color: lightcoral;
 }
