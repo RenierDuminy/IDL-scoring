@@ -19,7 +19,7 @@
     </div>
 
     <form id="scoreForm">
-      <!-- Description Table -->
+      <!-- Description Table (Team Selection Box) -->
       <table>
         <tr>
           <th>Team A</th>
@@ -40,6 +40,27 @@
         <tr>
           <th>Time</th>
           <td><input type="text" id="time" value="" readonly></td>
+        </tr>
+      </table>
+
+      <!-- Timer Table -->
+      <table class="timer-table">
+        <tr>
+          <th colspan="2" class="timer-title">Game Timer</th>
+        </tr>
+        <tr>
+          <!-- Left Half: Timer Display -->
+          <td class="timer-left" id="timerColumn">
+            <div id="timerDisplay" class="timer-display" style="font-size: 2em;">20:00</div>
+            <label for="countdownTime" class="timer-label">Set Time (min):</label>
+            <input type="number" id="countdownTime" value="20" min="1" max="60" class="timer-input">
+          </td>
+      
+          <!-- Right Half: Buttons (Horizontally Centered) -->
+          <td class="timer-right">
+            <button type="button" class="add-score" onclick="resetCountdown()">Reset</button>
+            <button type="button" class="add-score" onclick="toggleTimer()" id="playPauseBtn">Play</button>
+          </td>
         </tr>
       </table>
 
@@ -136,6 +157,80 @@
 
     <input type="button" id="popupButton" value="Add Score" onclick="saveScore()">
   </div>
+
+  <!-- Inline JavaScript for Timer Functionality -->
+  <script>
+    let countdownInterval;
+    let countdownSeconds = 1200; // Default: 20 minutes
+    let isRunning = false;
+    
+    function playBeep() {
+      let beep = new Audio('beep-07a.wav');
+      beep.play();
+    }
+  
+    function playEndBeep() {
+      let count = 0;
+      function beepLoop() {
+        if (count < 10) {
+          let beep = new Audio('beep-07a.wav');
+          beep.play();
+          count++;
+          setTimeout(beepLoop, 500);
+        }
+      }
+      beepLoop();
+    }
+  
+    function updateTimerDisplay() {
+      let mins = Math.floor(Math.abs(countdownSeconds) / 60).toString().padStart(2, '0');
+      let secs = Math.abs(countdownSeconds % 60).toString().padStart(2, '0');
+      let timeDisplay = `${mins}:${secs}`;
+      
+      if (countdownSeconds < 0) {
+        timeDisplay = `-${timeDisplay}`;
+        document.getElementById('timerDisplay').style.color = "red";
+      } else {
+        document.getElementById('timerDisplay').style.color = "black";
+      }
+      
+      document.getElementById('timerDisplay').textContent = timeDisplay;
+    }
+  
+    function toggleTimer() {
+      let timerColumn = document.getElementById('timerColumn');
+      if (isRunning) {
+        clearInterval(countdownInterval);
+        document.getElementById('playPauseBtn').textContent = "Play";
+        timerColumn.style.backgroundColor = "lightcoral"; // Light Red when paused
+        playBeep(); // Beep on pause
+      } else {
+        countdownInterval = setInterval(() => {
+          countdownSeconds--;
+          updateTimerDisplay();
+          if (countdownSeconds === 0) {
+            playEndBeep(); // Beep 10 times when time runs out
+          }
+        }, 1000);
+        document.getElementById('playPauseBtn').textContent = "Pause";
+        timerColumn.style.backgroundColor = "lightgreen"; // Light Green when running
+        playBeep(); // Beep on play
+      }
+      isRunning = !isRunning;
+    }
+  
+    function resetCountdown() {
+      clearInterval(countdownInterval);
+      isRunning = false;
+      document.getElementById('playPauseBtn').textContent = "Play";
+      document.getElementById('timerColumn').style.backgroundColor = ""; // Reset background
+      let newTime = parseInt(document.getElementById('countdownTime').value, 10) || 20;
+      countdownSeconds = newTime * 60;
+      updateTimerDisplay();
+    }
+  
+    updateTimerDisplay();
+  </script>
 
   <!-- Link to the external JavaScript file -->
   <script src="script.js"></script>
