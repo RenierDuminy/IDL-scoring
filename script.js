@@ -408,11 +408,55 @@ async function submitScore() {
 }
 
 /*************************************************
- * Timer Functionality (migrated from index.html)
+ * Timer Functionality with Persistence
  *************************************************/
+
 let countdownInterval;
-let countdownSeconds = 1200; // Default: 20 minutes
+let countdownSeconds;
 let isRunning = false;
+
+// Load previous timer state from localStorage
+function loadTimerState() {
+  const storedStartTime = localStorage.getItem('timerStartTime');
+  const storedDuration = localStorage.getItem('timerDuration');
+  const storedIsRunning = localStorage.getItem('timerRunning');
+
+  if (storedStartTime && storedDuration) {
+    const startTime = parseInt(storedStartTime, 10);
+    const duration = parseInt(storedDuration, 10);
+    const currentTime = Math.floor(Date.now() / 1000);
+    
+    // Calculate how much time has elapsed since the timer started
+    let elapsedTime = currentTime - startTime;
+    
+    // If the timer was running, subtract elapsed time from the total duration
+    countdownSeconds = Math.max(duration - elapsedTime, 0);
+    
+    // If the timer was running when the page was closed, restart it
+    if (storedIsRunning === 'true' && countdownSeconds > 0) {
+      isRunning = true;
+      startCountdown();
+    }
+  } else {
+    // Default: 20 minutes if nothing is stored
+    countdownSeconds = 1200;
+  }
+
+  updateTimerDisplay();
+}
+
+// Save the timer state to localStorage
+function saveTimerState() {
+  if (isRunning) {
+    localStorage.setItem('timerStartTime', Math.floor(Date.now() / 1000));
+    localStorage.setItem('timerDuration', countdownSeconds);
+    localStorage.setItem('timerRunning', 'true');
+  } else {
+    localStorage.removeItem('timerStartTime');
+    localStorage.removeItem('timerDuration');
+    localStorage.setItem('timerRunning', 'false');
+  }
+}
 
 function playBeep() {
   let beep = new Audio('beep-07a.wav');
@@ -455,48 +499,61 @@ function updateTimerDisplay() {
   timerDisplay.textContent = timeDisplay;
 }
 
-function toggleTimer() {
-  const timerColumn = document.getElementById('timerColumn');
+// Starts or resumes the countdown
+function startCountdown() {
+  isRunning = true;
+  document.getElementById('playPauseBtn').textContent = "Pause";
+  document.getElementById('timerColumn').classList.add('timer-running');
+  document.getElementById('timerColumn').classList.remove('timer-paused');
+  
+  saveTimerState();
 
-  if (isRunning) {
-    // Currently running -> pause
-    clearInterval(countdownInterval);
-    document.getElementById('playPauseBtn').textContent = "Play";
-    timerColumn.classList.remove('timer-running');
-    timerColumn.classList.add('timer-paused');
-    playBeep(); // Single beep on pause
+  countdownInterval = setInterval(() => {
+    countdownSeconds--;
+    updateTimerDisplay();
 
-  } else {
-    // Currently paused -> start
-    countdownInterval = setInterval(() => {
-      countdownSeconds--;
-      updateTimerDisplay();
-      if (countdownSeconds === 0) {
-        // 0 triggers 10 quick beeps
-        playEndBeep();
-      }
-    }, 1000);
-    document.getElementById('playPauseBtn').textContent = "Pause";
-    timerColumn.classList.add('timer-running');
-    timerColumn.classList.remove('timer-paused');
-    playBeep(); // Single beep on play
-  }
-
-  isRunning = !isRunning;
+    if (countdownSeconds === 0) {
+      clearInterval(countdownInterval);
+      isRunning = false;
+      localStorage.setItem('timerRunning', 'false');
+      playEndBeep(); // Beep when time runs out
+    }
+  }, 1000);
 }
 
+// Toggles the timer between play and pause
+function toggleTimer() {
+  if (isRunning) {
+    clearInterval(countdownInterval);
+    document.getElementById('playPauseBtn').textContent = "Play";
+    document.getElementById('timerColumn').classList.remove('timer-running');
+    document.getElementById('timerColumn').classList.add('timer-paused');
+    isRunning = false;
+    playBeep(); // Beep on pause
+  } else {
+    startCountdown();
+    playBeep(); // Beep on play
+  }
+
+  saveTimerState();
+}
+
+// Resets the countdown
 function resetCountdown() {
   clearInterval(countdownInterval);
   isRunning = false;
   document.getElementById('playPauseBtn').textContent = "Play";
-
-  const timerColumn = document.getElementById('timerColumn');
-  timerColumn.classList.remove('timer-running', 'timer-paused');
+  document.getElementById('timerColumn').classList.remove('timer-running', 'timer-paused');
 
   let newTime = parseInt(document.getElementById('countdownTime').value, 10) || 20;
   countdownSeconds = newTime * 60;
+
+  localStorage.removeItem('timerStartTime');
+  localStorage.removeItem('timerDuration');
+  localStorage.setItem('timerRunning', 'false');
+
   updateTimerDisplay();
 }
 
 // Initialize display once the page loads
-window.addEventListener('DOMContentLoaded', updateTimerDisplay);
+window.addEventListener('DOMContentLoaded', loadTimerState);
