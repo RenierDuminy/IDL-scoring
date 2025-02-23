@@ -411,63 +411,61 @@ async function submitScore() {
  * Timer Functionality with Persistence
  *************************************************/
 
+// Global variables
 let countdownInterval;
-let countdownSeconds;
 let isRunning = false;
+let endTime = 0; // Will hold the absolute end timestamp (in ms)
 
 // Load previous timer state from localStorage
 function loadTimerState() {
-  const storedStartTime = localStorage.getItem('timerStartTime');
-  const storedDuration = localStorage.getItem('timerDuration');
+  const storedEndTime = localStorage.getItem('timerEndTime');
   const storedIsRunning = localStorage.getItem('timerRunning');
 
-  if (storedStartTime && storedDuration) {
-    const startTime = parseInt(storedStartTime, 10);
-    const duration = parseInt(storedDuration, 10);
-    const currentTime = Math.floor(Date.now() / 1000);
-    
-    // Calculate how much time has elapsed since the timer started
-    let elapsedTime = currentTime - startTime;
-    
-    // If the timer was running, subtract elapsed time from the total duration
-    countdownSeconds = Math.max(duration - elapsedTime, 0);
-    
-    // If the timer was running when the page was closed, restart it
-    if (storedIsRunning === 'true' && countdownSeconds > 0) {
-      isRunning = true;
-      startCountdown();
-    }
+  if (storedEndTime) {
+    // Restore the saved endTime (in ms)
+    endTime = parseInt(storedEndTime, 10);
   } else {
-    // Default: 20 minutes if nothing is stored
-    countdownSeconds = 1200;
+    // Default: 20 minutes from "now" if nothing is stored
+    endTime = Date.now() + (20 * 60 * 1000);
   }
 
+  // Restore running state
+  isRunning = (storedIsRunning === 'true');
+
+  // Always update the display once on page load
   updateTimerDisplay();
+
+  // If it was running, resume the countdown
+  if (isRunning) {
+    startCountdown();
+  }
 }
 
 // Save the timer state to localStorage
 function saveTimerState() {
-  if (isRunning) {
-    localStorage.setItem('timerStartTime', Math.floor(Date.now() / 1000));
-    localStorage.setItem('timerDuration', countdownSeconds);
-    localStorage.setItem('timerRunning', 'true');
-  } else {
-    localStorage.removeItem('timerStartTime');
-    localStorage.removeItem('timerDuration');
-    localStorage.setItem('timerRunning', 'false');
-  }
+  localStorage.setItem('timerEndTime', endTime.toString());
+  localStorage.setItem('timerRunning', isRunning ? 'true' : 'false');
 }
 
+// Calculate how many seconds remain
+function getTimeRemaining() {
+  const now = Date.now();
+  // Difference (in milliseconds); convert to whole seconds
+  return Math.floor((endTime - now) / 1000);
+}
+
+// Play a short beep
 function playBeep() {
-  let beep = new Audio('beep-07a.wav');
+  const beep = new Audio('beep-07a.wav');
   beep.play();
 }
 
+// Play a series of beeps when countdown hits zero
 function playEndBeep() {
   let count = 0;
   function beepLoop() {
     if (count < 10) {
-      let beep = new Audio('beep-07a.wav');
+      const beep = new Audio('beep-07a.wav');
       beep.play();
       count++;
       setTimeout(beepLoop, 1000);
@@ -476,84 +474,87 @@ function playEndBeep() {
   beepLoop();
 }
 
+// Update the timer display in the DOM
 function updateTimerDisplay() {
+  const countdownSeconds = getTimeRemaining();
   const timerDisplay = document.getElementById('timerDisplay');
 
-  // Calculate minutes/seconds from countdownSeconds
-  const mins = Math.floor(Math.abs(countdownSeconds) / 60)
-    .toString()
-    .padStart(2, '0');
-  const secs = Math.abs(countdownSeconds % 60)
-    .toString()
-    .padStart(2, '0');
+  // Convert to MM:SS (or show negative if below zero)
+  const absSeconds = Math.abs(countdownSeconds);
+  const mins = Math.floor(absSeconds / 60).toString().padStart(2, '0');
+  const secs = (absSeconds % 60).toString().padStart(2, '0');
 
-  // Display negative if below zero
-  let timeDisplay = `${mins}:${secs}`;
+  let timeString = `${mins}:${secs}`;
+
   if (countdownSeconds < 0) {
-    timeDisplay = `-${timeDisplay}`;
+    timeString = `-${timeString}`;
     timerDisplay.classList.add('timer-negative');
   } else {
     timerDisplay.classList.remove('timer-negative');
   }
 
-  timerDisplay.textContent = timeDisplay;
+  timerDisplay.textContent = timeString;
 }
 
-// Starts or resumes the countdown
+// Start (or resume) the countdown
 function startCountdown() {
   isRunning = true;
   document.getElementById('playPauseBtn').textContent = "Pause";
   document.getElementById('timerColumn').classList.add('timer-running');
   document.getElementById('timerColumn').classList.remove('timer-paused');
-  
   saveTimerState();
 
+  // Clear any existing interval to avoid duplicates
+  clearInterval(countdownInterval);
+
+  // Update display every second
   countdownInterval = setInterval(() => {
-    countdownSeconds--;
     updateTimerDisplay();
 
-    if (countdownSeconds === 0) {
+    // If time is up or below zero, stop
+    if (getTimeRemaining() <= 0) {
       clearInterval(countdownInterval);
       isRunning = false;
-      localStorage.setItem('timerRunning', 'false');
-      playEndBeep(); // Beep when time runs out
+      saveTimerState();
+      playEndBeep();
     }
   }, 1000);
 }
 
-// Toggles the timer between play and pause
+// Toggle play/pause
 function toggleTimer() {
   if (isRunning) {
+    // Pause
     clearInterval(countdownInterval);
+    isRunning = false;
     document.getElementById('playPauseBtn').textContent = "Play";
     document.getElementById('timerColumn').classList.remove('timer-running');
     document.getElementById('timerColumn').classList.add('timer-paused');
-    isRunning = false;
-    playBeep(); // Beep on pause
+    playBeep();
   } else {
+    // Resume
+    isRunning = true;
+    playBeep();
     startCountdown();
-    playBeep(); // Beep on play
   }
-
   saveTimerState();
 }
 
-// Resets the countdown
+// Reset the countdown to a new value
 function resetCountdown() {
   clearInterval(countdownInterval);
   isRunning = false;
   document.getElementById('playPauseBtn').textContent = "Play";
   document.getElementById('timerColumn').classList.remove('timer-running', 'timer-paused');
 
-  let newTime = parseInt(document.getElementById('countdownTime').value, 10) || 20;
-  countdownSeconds = newTime * 60;
+  // Grab user input in minutes, default to 20 if empty
+  const newTime = parseInt(document.getElementById('countdownTime').value, 10) || 20;
+  // Set new end time (now + X minutes)
+  endTime = Date.now() + (newTime * 60 * 1000);
 
-  localStorage.removeItem('timerStartTime');
-  localStorage.removeItem('timerDuration');
-  localStorage.setItem('timerRunning', 'false');
-
+  saveTimerState();
   updateTimerDisplay();
 }
 
-// Initialize display once the page loads
+// Initialize once the page loads
 window.addEventListener('DOMContentLoaded', loadTimerState);
