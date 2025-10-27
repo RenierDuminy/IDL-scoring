@@ -1,0 +1,23 @@
+{
+  "name": "Maties Scoring",
+  "short_name": "Maties Score",
+  "description": "Offline-capable score sheet for Maties matches.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f6f1eb",
+  "theme_color": "#7a1f3d",
+  "icons": [
+    {
+      "src": "page_icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "SU Comm - Universal logo_square_noBG.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
